@@ -1,0 +1,347 @@
+---
+import { render } from "astro:content";
+import ActivityParticipants from "./ActivityParticipants.astro";
+import ProjectVisual from "./ProjectVisual.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getPageContent, getActivities, type Activity } from "../lib/content";
+
+interface Props {
+  project: Activity;
+}
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+const [projects, { data: content }] = await Promise.all([
+  getActivities(project.collection),
+  getPageContent(project.collection),
+]);
+const currentIndex = projects.findIndex(({ id }) => id === project.id);
+const nextProject = projects.length > 1 ? projects[(currentIndex + 1) % projects.length] : undefined;
+---
+
+<BaseLayout title={project.data.title} description={project.data.summary}>
+  <article class="project-detail">
+    <header class="project-detail__hero" id="top">
+      <div class="container">
+        <div class="project-detail__crumb">
+          <a href={`/${project.collection}/`}>{content.detail.breadcrumbLabel}</a>
+          <span>/</span>
+          <span>{project.data.code}</span>
+        </div>
+
+        <div class="project-detail__title">
+          <div>
+            <p>{project.data.titleEn}</p>
+            <h1 data-fit-title>{project.data.title}</h1>
+          </div>
+          <span>{project.data.code}</span>
+        </div>
+
+        <div class="project-detail__summary">
+          <div>
+            <dl>
+              <div>
+                <dt>{content.detail.yearLabel}</dt>
+                <dd>{project.data.year}</dd>
+              </div>
+              <div>
+                <dt>{content.detail.statusLabel}</dt>
+                <dd>{project.data.phase}</dd>
+              </div>
+            </dl>
+            <ActivityParticipants participants={project.participants} />
+          </div>
+          <p>{project.data.summary}</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="project-detail__visual container">
+      <ProjectVisual visual={project.data.visual} label={project.data.code} />
+    </div>
+
+    <section class="project-detail__content section">
+      <div class="project-detail__content-inner container">
+        <aside>
+          <p class="eyebrow">{content.detail.noteLabel}</p>
+          <ul>
+            {project.data.tags.map((tag) => <li>{tag}</li>)}
+          </ul>
+        </aside>
+        <div class="prose">
+          <Content />
+        </div>
+      </div>
+    </section>
+  </article>
+
+  {
+    nextProject && (
+      <a
+        class="next-project"
+        href={`/${project.collection}/${nextProject.id}/`}
+        aria-label={`${content.detail.nextAriaPrefix} ${nextProject.data.title}`}
+      >
+        <div class="container">
+          <span>{content.detail.nextLabel} / {nextProject.data.code}</span>
+          <strong>{nextProject.data.title}</strong>
+          <i aria-hidden="true">→</i>
+        </div>
+      </a>
+    )
+  }
+</BaseLayout>
+
+<script>
+  const title = document.querySelector<HTMLElement>("[data-fit-title]");
+  if (title) {
+    const fit = () => {
+      title.style.removeProperty("font-size");
+      const base = parseFloat(getComputedStyle(title).fontSize);
+      // Keep short titles at hero size; fit longer ones into two desktop or
+      // three mobile lines, with a readable lower bound and no truncation.
+      const lines = window.matchMedia("(max-width: 48rem)").matches ? 3 : 2;
+      const minimum = Math.min(base, Math.max(28, base * 0.6));
+      const fits = () => title.scrollHeight <= parseFloat(getComputedStyle(title).lineHeight) * lines + 1
+        && title.scrollWidth <= title.clientWidth + 1;
+      if (fits()) return;
+      let low = minimum;
+      let high = base;
+      for (let step = 0; step < 10; step++) {
+        const size = (low + high) / 2;
+        title.style.fontSize = `${size}px`;
+        if (fits()) low = size;
+        else high = size;
+      }
+      title.style.fontSize = `${Math.floor(low * 10) / 10}px`;
+    };
+    let frame = 0;
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(fit);
+    };
+    let width = 0;
+    new ResizeObserver(([entry]) => {
+      if (entry.contentRect.width === width) return;
+      width = entry.contentRect.width;
+      schedule();
+    }).observe(title.parentElement!);
+    window.addEventListener("resize", schedule);
+    document.fonts.ready.then(schedule);
+  }
+</script>
+
+<style>
+  .project-detail {
+    background: var(--paper);
+  }
+
+  .project-detail__hero {
+    padding-block: clamp(2rem, 5vw, 5rem) clamp(5rem, 10vw, 10rem);
+    color: var(--white);
+    background: var(--ink);
+  }
+
+  .project-detail__crumb {
+    display: flex;
+    gap: 0.65rem;
+    color: #777;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .project-detail__crumb a {
+    color: #bbb;
+    text-decoration: none;
+  }
+
+  .project-detail__title {
+    display: grid;
+    margin-top: clamp(5rem, 10vw, 10rem);
+    align-items: end;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2rem;
+  }
+
+  .project-detail__title p {
+    margin: 0 0 0.7rem;
+    color: #888;
+    font-size: clamp(1rem, 1.8vw, 1.5rem);
+    font-style: italic;
+  }
+
+  .project-detail__title > div {
+    min-width: 0;
+  }
+
+  h1 {
+    max-width: 90rem;
+    margin: 0;
+    font-size: var(--hero-title-size);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.055em;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+  }
+
+  .project-detail__title > span {
+    color: #555;
+    font-size: clamp(2rem, 5vw, 5rem);
+    font-weight: 700;
+    letter-spacing: -0.06em;
+  }
+
+  .project-detail__summary {
+    display: grid;
+    margin-top: clamp(4rem, 8vw, 8rem);
+    padding-top: 2rem;
+    align-items: start;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    border-top: 1px solid var(--line-dark);
+  }
+
+  .project-detail__summary dl {
+    display: grid;
+    max-width: 25rem;
+    margin: 0;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .project-detail__summary dt {
+    margin-bottom: 0.7rem;
+    color: #666;
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .project-detail__summary dd {
+    margin: 0;
+    color: #aaa;
+    font-size: 0.85rem;
+  }
+
+  .project-detail__summary > p {
+    max-width: 40rem;
+    margin: 0;
+    justify-self: end;
+    color: #c3c3be;
+    font-size: clamp(1.1rem, 1.8vw, 1.5rem);
+    line-height: 1.7;
+    word-break: keep-all;
+  }
+
+  .project-detail__visual {
+    margin-top: clamp(-5rem, -6vw, -3rem);
+  }
+
+  .project-detail__visual :global(.project-visual) {
+    aspect-ratio: 2.05;
+    border: 1px solid #292929;
+  }
+
+  .project-detail__content-inner {
+    display: grid;
+    grid-template-columns: minmax(12rem, 0.5fr) minmax(0, 1.5fr);
+    gap: 3rem;
+  }
+
+  .project-detail__content aside ul {
+    display: flex;
+    margin-top: 2rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .project-detail__content aside li {
+    padding: 0.4rem 0.65rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .next-project {
+    display: block;
+    color: var(--white);
+    background: var(--ink);
+    text-decoration: none;
+  }
+
+  .next-project > div {
+    display: grid;
+    min-height: clamp(18rem, 32vw, 34rem);
+    padding-block: 2rem;
+    align-items: center;
+    grid-template-columns: 1fr 3fr auto;
+    gap: 2rem;
+  }
+
+  .next-project span {
+    color: #777;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .next-project strong {
+    font-size: clamp(2.8rem, 7vw, 8rem);
+    font-weight: 600;
+    line-height: 0.95;
+    letter-spacing: -0.07em;
+  }
+
+  .next-project i {
+    font-size: clamp(2rem, 5vw, 5rem);
+    font-style: normal;
+    transition: transform 400ms var(--ease-out);
+  }
+
+  .next-project:hover i {
+    transform: translateX(1rem);
+  }
+
+  @media (max-width: 48rem) {
+    .project-detail__title {
+      grid-template-columns: 1fr;
+    }
+
+    .project-detail__title > span {
+      display: none;
+    }
+
+    .project-detail__summary,
+    .project-detail__content-inner {
+      grid-template-columns: 1fr;
+    }
+
+    .project-detail__summary > p {
+      justify-self: start;
+    }
+
+    .project-detail__visual :global(.project-visual) {
+      aspect-ratio: 1.25;
+    }
+
+    .next-project > div {
+      align-content: center;
+      grid-template-columns: 1fr auto;
+    }
+
+    .next-project strong {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+  }
+</style>

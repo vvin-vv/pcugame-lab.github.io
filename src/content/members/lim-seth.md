@@ -6,8 +6,8 @@ interests:
   - "Local LLM"
 positions:
   - year: 2026
-    role: "Developer Researcher"
-    group: "student"
+    role: "Researcher"
+    group: "Undergraduate"
     level: "member"
 email: "sragon000@gmail.com"
 ---

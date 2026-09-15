@@ -1,15 +1,23 @@
 ---
 name: "황장민"
-nameEn: "Hwang Jangmin"
+nameEn: "JangMin Hwang"
 monogram: "HJM"
-interests: []
+photo: "/images/members/hwang-jangmin.jpg"
+interests:
+  - "Cinemachine"
+  - "Unity"
+  - "unrealEngine"
 positions:
   - year: 2026
     role: "Researcher"
-    group: "researcher"
+    group: "Graduate Student"
     level: "member"
   - year: 2025
     role: "Lab Director"
-    group: "faculty"
+    group: "Undergraduate"
     level: "leadership"
+github: "https://github.com/jangmindd"
+email: "2631605@pcu.ac.kr"
 ---
+
+늙었다는건 살아남았다는 것

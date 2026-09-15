@@ -1,6 +1,6 @@
 ---
 import { render } from "astro:content";
-import PageHero from "../components/PageHero.astro";
+import Hero from "../components/Hero.astro";
 import SectionHeading from "../components/SectionHeading.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { getPageContent, getSiteContent } from "../lib/content";
@@ -16,10 +16,10 @@ const { Content } = await render(aboutContent);
   title={aboutContent.data.seo.title}
   description={aboutContent.data.seo.description}
 >
-  <PageHero
-    index={aboutContent.data.hero.index}
-    eyebrow={aboutContent.data.hero.eyebrow}
-    title={aboutContent.data.hero.title}
+  <Hero
+    lines={aboutContent.data.hero.lines}
+    metaPrimary={aboutContent.data.hero.metaPrimary}
+    metaSecondary={aboutContent.data.hero.metaSecondary}
     titleEn={aboutContent.data.hero.titleEn}
     description={aboutContent.data.hero.description}
   />

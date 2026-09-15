@@ -1,0 +1,3 @@
+#!/bin/sh
+# Reject PNGs in the index, including partially staged files; do not alter staging.
+exec node scripts/check-png-staging.mjs

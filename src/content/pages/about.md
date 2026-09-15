@@ -6,9 +6,10 @@ seo:
   description: "Ludic Core Laboratory 연구실을 소개합니다."
 
 hero:
-  index: "01"
-  eyebrow: "About LCL"
-  title: "연구실"
+  lines:
+    - word: "연구실"
+  metaPrimary: "01"
+  metaSecondary: "About LCL"
   titleEn: "About the Lab"
   description: "Ludic Core Laboratory를 소개합니다."
 

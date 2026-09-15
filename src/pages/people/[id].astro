@@ -1,0 +1,66 @@
+---
+import { render, type CollectionEntry } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ProjectCard from "../../components/ProjectCard.astro";
+import { getMembers, getMemberActivities, getPageContent } from "../../lib/content";
+export async function getStaticPaths() {
+  return (await getMembers()).map((member) => ({params: {id: member.id}, props: {member}}));
+}
+interface Props { member: CollectionEntry<"members"> }
+const { member } = Astro.props;
+const { data } = member;
+const [{Content}, activities, {data: content}] = await Promise.all([
+  render(member), getMemberActivities(member.id), getPageContent("people"),
+]);
+const history = [...data.positions].sort((a, b) => b.year - a.year);
+---
+<BaseLayout title={data.name} description={`${data.name}의 연구 및 프로젝트 참여 이력`}>
+  <section class="profile section section--dark" id="top">
+    <div class="container">
+      <a href="/people/">← {content.profile.backLabel}</a>
+      <div class="profile__intro">
+        <img src={data.photo ?? "/lcl-logo.svg"} alt="" />
+        <div>
+          <p>{data.nameEn}</p>
+          <h1>{data.name}</h1>
+          <div class="profile__bio"><Content /></div>
+          <ul class="profile__tags">{data.interests.map((interest) => <li>{interest}</li>)}</ul>
+          <div class="profile__links">
+            {data.github && <a href={data.github} target="_blank" rel="noreferrer">{content.memberLinks.github} ↗</a>}
+            {data.website && <a href={data.website} target="_blank" rel="noreferrer">{content.memberLinks.website} ↗</a>}
+            {data.email && <a href={`mailto:${data.email}`}>{content.memberLinks.email}</a>}
+          </div>
+        </div>
+      </div>
+      <h2>{content.profile.historyLabel}</h2>
+      <ul class="profile__history">
+        {history.map((position) => <li><strong>{position.year}</strong><span>{position.role}</span><span>{position.group}</span></li>)}
+      </ul>
+    </div>
+  </section>
+  {(["research", "projects"] as const).map((kind) => (
+    <section class="section">
+      <div class="container">
+        <h2 class="activity-heading">{kind === "research" ? content.profile.researchLabel : content.profile.projectsLabel}</h2>
+        {activities[kind].length > 0 ? <div class="activity-grid">
+          {activities[kind].map((project, index) => <ProjectCard project={project} index={index} />)}
+        </div> : <p>{kind === "research" ? content.profile.emptyResearchLabel : content.profile.emptyProjectsLabel}</p>}
+      </div>
+    </section>
+  ))}
+</BaseLayout>
+<style>
+  a { color: inherit; text-underline-offset: .25em; }
+  .profile__intro { display: grid; grid-template-columns: minmax(10rem, 18rem) 1fr; gap: clamp(2rem, 5vw, 5rem); margin-block: 4rem; align-items: start; }
+  img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
+  h1 { margin-block: .5rem 2rem; font-size: clamp(3rem, 7vw, 6rem); }
+  h2 { font-size: clamp(1.5rem, 3vw, 2.5rem); }
+  .profile__bio { line-height: 1.8; }
+  .profile__tags, .profile__links { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; }
+  .profile__tags { color: #aaa; }
+  .profile__history { margin-top: 1.5rem; }
+  .profile__history li { display: flex; flex-wrap: wrap; gap: 1rem 2rem; border-top: 1px solid #444; padding-block: 1rem; }
+  .activity-heading { margin-bottom: 3rem; }
+  .activity-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3rem; }
+  @media (max-width: 48rem) { .profile__intro, .activity-grid { grid-template-columns: 1fr; } img { max-width: 16rem; } }
+</style>

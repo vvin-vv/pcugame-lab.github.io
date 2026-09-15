@@ -8,6 +8,7 @@
   --muted: #6d6d68;
   --line: #d5d5cf;
   --line-dark: #30302e;
+  --hero-title-size: clamp(3.06rem, 7.5vw, 8.4rem);
   --header-height: 4.75rem;
   --page-gutter: clamp(1.25rem, 3vw, 3.5rem);
   --content-width: 112rem;
@@ -227,4 +228,15 @@ a {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Shared by the index hero and activity detail titles. */
+@media (max-width: 60rem) {
+  :root { --hero-title-size: clamp(2.88rem, 9.3vw, 5.4rem); }
+}
+@media (max-width: 48rem) {
+  :root { --hero-title-size: clamp(2.61rem, 12.6vw, 4.8rem); }
+}
+@media (max-width: 25rem) {
+  :root { --hero-title-size: 11.4vw; }
 }

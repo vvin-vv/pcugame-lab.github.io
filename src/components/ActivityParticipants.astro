@@ -1,0 +1,19 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { getSiteContent } from "../lib/content";
+interface Props { participants: CollectionEntry<"members">[] }
+const { participants } = Astro.props;
+const { data: content } = await getSiteContent();
+---
+<div class="participants">
+  <span>{content.accessibility.participantsLabel}</span>
+  <ul aria-label={content.accessibility.participantsLabel}>
+    {participants.map((member) => <li><a href={`/people/${member.id}/`}>{member.data.name}</a></li>)}
+  </ul>
+</div>
+<style>
+  .participants { display: flex; flex-wrap: wrap; align-items: baseline; gap: .6rem 1rem; padding-block: 1rem; font-size: .85rem; }
+  .participants > span { opacity: .7; }
+  ul { display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
+  a { color: inherit; text-underline-offset: .25em; }
+</style>

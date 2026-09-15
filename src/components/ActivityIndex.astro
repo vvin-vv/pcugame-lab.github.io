@@ -1,0 +1,59 @@
+---
+import Hero from "./Hero.astro";
+import ProjectCard from "./ProjectCard.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getPageContent, getActivities, type ActivityKind } from "../lib/content";
+interface Props { kind: ActivityKind }
+const { kind } = Astro.props;
+const [activities, { data: content }] = await Promise.all([getActivities(kind), getPageContent(kind)]);
+---
+<BaseLayout title={content.seo.title} description={content.seo.description}>
+  <Hero {...content.hero} />
+  <section class="research-index section">
+    <div class="container">
+      <header class="research-index__header"><p class="eyebrow">{content.listEyebrow}</p></header>
+      {activities.length > 0 ? (
+        <div class="research-index__grid">
+          {activities.map((project, index) => <ProjectCard project={project} index={index} />)}
+        </div>
+      ) : <p>{content.emptyLabel}</p>}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .research-index {
+    background: var(--white);
+  }
+
+  .research-index__header {
+    margin-bottom: clamp(4rem, 8vw, 8rem);
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .research-index__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(4rem, 8vw, 8rem) clamp(1.5rem, 4vw, 5rem);
+  }
+
+  .research-index__grid > :global(:nth-child(even)) {
+    margin-top: clamp(3rem, 8vw, 9rem);
+  }
+
+  @media (max-width: 48rem) {
+    .research-index__header,
+    .research-index__grid {
+      grid-template-columns: 1fr;
+    }
+
+    .research-index__grid {
+      gap: 4rem;
+    }
+
+    .research-index__grid > :global(:nth-child(even)) {
+      margin-top: 0;
+    }
+  }
+</style>

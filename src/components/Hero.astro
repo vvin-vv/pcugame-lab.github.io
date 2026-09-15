@@ -1,0 +1,381 @@
+---
+import CoreMark from "./CoreMark.astro";
+
+interface HeroLine {
+  word: string;
+  suffix: string;
+  annotation: string;
+}
+
+interface Props {
+  lines: HeroLine[];
+  metaPrimary: string;
+  metaSecondary: string;
+  /** 서브페이지 타이틀 아래 이탤릭 영문 (About the Lab 등) */
+  titleEn?: string;
+  /** 하단 본문 설명 */
+  description?: string;
+  /** 홈에서만 쓰는 스크롤 안내 링크 */
+  scrollLabel?: string;
+  scrollHref?: string;
+}
+
+const {
+  lines,
+  metaPrimary,
+  metaSecondary,
+  titleEn,
+  description,
+  scrollLabel,
+  scrollHref = "#introduction",
+} = Astro.props;
+
+const accessibleTitle = lines.map(({ word, suffix }) => `${word}${suffix}`).join(" ");
+const isStacked = lines.length > 1;
+---
+
+<section
+  class:list={["hero", { "hero--stacked": isStacked }]}
+  id="top"
+  aria-labelledby="hero-title"
+>
+  <div class="hero__grid" aria-hidden="true"></div>
+  <CoreMark class="hero__core" />
+
+  <div class="hero__meta">
+    <p>{metaPrimary}</p>
+    <p>{metaSecondary}</p>
+  </div>
+
+  <div class="hero__titleblock">
+    <h1 id="hero-title" class="hero__title" aria-label={accessibleTitle}>
+    {
+      lines.map((line, index) => (
+        <span class={`hero__line hero__line--${index + 1}`} aria-hidden="true">
+          <span class="hero__word">
+            {line.word}
+            {line.annotation && <em>{line.annotation}</em>}
+          </span>
+          {line.suffix && <span class="hero__suffix">{line.suffix}</span>}
+        </span>
+      ))
+    }
+    </h1>
+    {titleEn && <p class="hero__title-en">{titleEn}</p>}
+  </div>
+
+  <div class="hero__bottom">
+    {description && <p class="hero__description">{description}</p>}
+    {
+      scrollLabel && (
+        <a class="hero__scroll" href={scrollHref}>
+          <span>{scrollLabel}</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v17M5 13l7 7 7-7" />
+          </svg>
+        </a>
+      )
+    }
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    display: grid;
+    min-height: calc(70svh - var(--header-height));
+    padding: clamp(1.25rem, 2vw, 2rem) var(--page-gutter)
+      clamp(1.5rem, 3vw, 3rem);
+    color: var(--white);
+    background: var(--ink);
+    border-bottom: 1px solid var(--line-dark);
+    grid-template-rows: auto 1fr auto;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .hero__grid {
+    position: absolute;
+    z-index: -2;
+    inset: 0;
+    opacity: 0.5;
+    background-image:
+      linear-gradient(to right, #1b1b1b 1px, transparent 1px),
+      linear-gradient(to bottom, #1b1b1b 1px, transparent 1px);
+    background-size: min(10vw, 9rem) min(10vw, 9rem);
+    mask-image: linear-gradient(to bottom, #000 0%, transparent 92%);
+  }
+
+  .hero::after {
+    position: absolute;
+    z-index: -1;
+    right: -4vw;
+    bottom: -18vw;
+    width: 58vw;
+    aspect-ratio: 1;
+    border: 1px solid #333;
+    border-radius: 50%;
+    content: "";
+  }
+
+  /* 코어 마크는 타이틀 행(1fr) 안에 갇혀 하단 텍스트를 침범하지 않습니다. */
+  :global(.hero__core) {
+    position: absolute;
+    z-index: -1;
+    top: 50%;
+    right: 6%;
+    width: clamp(11rem, 24vw, 28rem);
+    height: clamp(11rem, 24vw, 28rem);
+    color: #292929;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .hero__meta {
+    z-index: 1;
+    display: flex;
+    width: 100%;
+    max-width: var(--content-width);
+    margin-inline: auto;
+    justify-content: space-between;
+    color: #747470;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .hero__meta p {
+    margin: 0;
+  }
+
+  .hero__titleblock {
+    z-index: 1;
+    width: 100%;
+    max-width: var(--content-width);
+    margin: clamp(1.25rem, 2.5vh, 2.5rem) auto;
+    align-self: center;
+  }
+
+  .hero__title {
+    display: flex;
+    margin: 0;
+    flex-direction: column;
+    row-gap: 0.06em;
+    font-size: var(--hero-title-size);
+    font-weight: 700;
+    line-height: 0.92;
+    letter-spacing: 0;
+  }
+
+  .hero--stacked {
+    padding-bottom: clamp(0.75rem, 1.5vw, 1.5rem);
+  }
+
+  /* 홈: 아래 여백을 줄이고 위를 키워 타이틀만 내립니다. */
+  .hero--stacked .hero__titleblock {
+    margin-block: clamp(4rem, 8vh, 7rem) 0;
+  }
+
+  /* 단일 줄(서브페이지)은 자간을 좁혀 원래 PageHero 조판을 유지합니다. */
+  .hero:not(.hero--stacked) .hero__title {
+    line-height: 0.82;
+    letter-spacing: -0.09em;
+  }
+
+  .hero__line {
+    display: flex;
+    align-items: baseline;
+  }
+
+  .hero__line--1 {
+    margin-left: 5vw;
+  }
+
+  .hero--stacked .hero__line--2 {
+    margin-left: 15vw;
+  }
+
+  .hero--stacked .hero__line--3 {
+    margin-top: 0.09em;
+    margin-left: 7vw;
+  }
+
+  .hero__word {
+    position: relative;
+    display: inline-block;
+    white-space: nowrap;
+  }
+
+  .hero__word em {
+    position: absolute;
+    top: 12%;
+    right: -0.75rem;
+    font-size: clamp(0.58rem, 0.65vw, 0.8rem);
+    font-style: normal;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.13em;
+    transform: translateX(100%);
+    text-transform: uppercase;
+  }
+
+  .hero__word em::before {
+    display: inline-block;
+    width: 1.6rem;
+    height: 1px;
+    margin-right: 0.55rem;
+    background: currentColor;
+    vertical-align: middle;
+    content: "";
+  }
+
+  .hero__suffix {
+    margin-left: -0.08em;
+    font-size: 0.27em;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+
+  .hero__bottom {
+    z-index: 1;
+    display: grid;
+    width: 100%;
+    max-width: var(--content-width);
+    margin-inline: auto;
+    align-items: end;
+    column-gap: 3rem;
+    grid-template-columns: minmax(12rem, 0.8fr) minmax(18rem, 1.2fr);
+    row-gap: 1.5rem;
+  }
+
+  .hero__title-en {
+    margin: 0.6em 0 0;
+    padding-left: 5vw;
+    color: #888;
+    font-size: clamp(1.4rem, 2.7vw, 3rem);
+    font-style: italic;
+    letter-spacing: -0.04em;
+  }
+
+  .hero__description {
+    max-width: 52rem;
+    margin: 0;
+    justify-self: end;
+    grid-column: 2;
+    color: #b9b9b4;
+    font-size: clamp(0.95rem, 1.3vw, 1.15rem);
+    line-height: 1.75;
+    text-align: right;
+    word-break: keep-all;
+  }
+
+  /* 스크롤 링크는 항상 마지막 열 오른쪽 끝에 붙습니다. */
+  .hero__scroll {
+    display: inline-flex;
+    padding: 0.9rem 0;
+    align-items: center;
+    justify-self: end;
+    gap: 1.25rem;
+    grid-column: 2;
+    border-bottom: 1px solid #555;
+    color: #999;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .hero__scroll svg {
+    width: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+  }
+
+  @media (max-width: 60rem) {
+
+    .hero--stacked .hero__line--2 {
+      margin-left: 12vw;
+    }
+  }
+
+  @media (max-width: 48rem) {
+    .hero {
+      padding-top: 1rem;
+    }
+
+    .hero__meta p:last-child {
+      display: none;
+    }
+
+    :global(.hero__core) {
+      right: -12%;
+      width: 60vw;
+      height: 60vw;
+    }
+
+    .hero__titleblock {
+      margin-block: 2.5rem;
+    }
+
+    .hero__title {
+      row-gap: 0.09em;
+      line-height: 0.94;
+    }
+
+    .hero__line--1 {
+      margin-left: 0;
+    }
+
+    .hero__title-en {
+      padding-left: 0;
+    }
+
+    .hero--stacked .hero__line--2 {
+      margin-left: 0.38em;
+    }
+
+    .hero--stacked .hero__line--3 {
+      margin-top: 0.2em;
+      margin-left: 0;
+      font-size: 0.74em;
+    }
+
+    .hero__word em {
+      top: 8%;
+      right: -0.38rem;
+      font-size: 0.5rem;
+      letter-spacing: 0.1em;
+    }
+
+    .hero__word em::before {
+      width: 0.65rem;
+      margin-right: 0.35rem;
+    }
+
+    .hero__bottom {
+      grid-template-columns: 1fr;
+      row-gap: 1rem;
+    }
+
+    .hero__description,
+    .hero__scroll {
+      grid-column: auto;
+    }
+
+    .hero__description {
+      text-align: left;
+    }
+
+    .hero__description {
+      justify-self: start;
+    }
+
+    .hero__scroll {
+      justify-self: end;
+    }
+  }
+
+</style>

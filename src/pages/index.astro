@@ -1,10 +1,10 @@
 ---
-import AnnotatedHero from "../components/AnnotatedHero.astro";
+import Hero from "../components/Hero.astro";
 import ProjectCard from "../components/ProjectCard.astro";
 import SectionHeading from "../components/SectionHeading.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import {
-  getFeaturedProjects,
+  getFeaturedActivities,
   getPageContent,
   getSiteContent,
   getMembers,
@@ -14,10 +14,11 @@ import {
   sortPositionedMembers,
 } from "../lib/member-sort";
 
-const [siteContent, homeContent, projects, members] = await Promise.all([
+const [siteContent, homeContent, research, projects, members] = await Promise.all([
   getSiteContent(),
   getPageContent("home"),
-  getFeaturedProjects(),
+  getFeaturedActivities("research"),
+  getFeaturedActivities("projects"),
   getMembers(),
 ]);
 const currentMembers = sortPositionedMembers(
@@ -29,11 +30,12 @@ const currentMembers = sortPositionedMembers(
 ---
 
 <BaseLayout>
-  <AnnotatedHero
+  <Hero
     lines={homeContent.data.hero.lines}
-    lead={homeContent.data.hero.lead}
     metaPrimary={homeContent.data.hero.metaPrimary}
     metaSecondary={homeContent.data.hero.metaSecondary}
+    titleEn={homeContent.data.hero.titleEn}
+    description={homeContent.data.hero.description}
     scrollLabel={homeContent.data.hero.scrollLabel}
   />
 
@@ -84,9 +86,10 @@ const currentMembers = sortPositionedMembers(
         title={homeContent.data.research.title}
         description={homeContent.data.research.description}
       />
+      {research.length === 0 && <p>{homeContent.data.research.emptyLabel}</p>}
       <div class="research__grid">
         {
-          projects.map((project, index) => (
+          research.map((project, index) => (
             <ProjectCard project={project} index={index} />
           ))
         }
@@ -98,6 +101,19 @@ const currentMembers = sortPositionedMembers(
             <path d="M2 10h15M11 4l6 6-6 6" fill="none" stroke="currentColor"></path>
           </svg>
         </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="research section">
+    <div class="container">
+      <SectionHeading {...homeContent.data.projects} />
+      {projects.length === 0 && <p>{homeContent.data.projects.emptyLabel}</p>}
+      <div class="research__grid">
+        {projects.map((project, index) => <ProjectCard project={project} index={index} />)}
+      </div>
+      <div class="research__more">
+        <a class="text-link" href="/projects/">{homeContent.data.projects.linkLabel} <span aria-hidden="true">→</span></a>
       </div>
     </div>
   </section>
@@ -140,7 +156,7 @@ const currentMembers = sortPositionedMembers(
       <div class="people__list">
         {
           currentMembers.map(({ member, position }, index) => (
-            <a href="/people/" class="person-row">
+            <a href={`/people/${member.id}/`} class="person-row">
               <span class="person-row__index">
                 {String(index + 1).padStart(2, "0")}
               </span>

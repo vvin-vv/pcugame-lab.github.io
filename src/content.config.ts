@@ -13,10 +13,16 @@ const seoSchema = z.strictObject({
   description: text,
 });
 
+const heroLineSchema = z.strictObject({
+  word: text,
+  suffix: z.string().trim().default(""),
+  annotation: z.string().trim().default(""),
+});
+
 const pageHeroSchema = z.strictObject({
-  index: text,
-  eyebrow: text,
-  title: text,
+  lines: z.array(heroLineSchema).min(1),
+  metaPrimary: text,
+  metaSecondary: text,
   titleEn: text,
   description: text,
 });
@@ -81,7 +87,11 @@ const site = defineCollection({
     accessibility: z.strictObject({
       skipLinkLabel: text,
       memberInterestsLabel: text,
+      memberInterestsMoreLabel: text,
       projectKeywordsLabel: text,
+      researchKeywordsLabel: text,
+      researchViewSuffix: text,
+      participantsLabel: text,
       projectViewSuffix: text,
       projectVisualSuffix: text,
     }),
@@ -97,18 +107,11 @@ const site = defineCollection({
 const homePageSchema = z.strictObject({
   page: z.literal("home"),
   hero: z.strictObject({
-    lines: z
-      .array(
-        z.strictObject({
-          word: text,
-          suffix: z.string().trim().default(""),
-          annotation: text,
-        }),
-      )
-      .length(3),
-    lead: text.optional(),
+    lines: z.array(heroLineSchema).length(3),
     metaPrimary: text,
     metaSecondary: text,
+    titleEn: text.optional(),
+    description: text.optional(),
     scrollLabel: text,
   }),
   intro: z.strictObject({
@@ -122,6 +125,15 @@ const homePageSchema = z.strictObject({
     title: text,
     description: text,
     linkLabel: text,
+    emptyLabel: text,
+  }),
+  projects: z.strictObject({
+    index: text,
+    eyebrow: text,
+    title: text,
+    description: text,
+    linkLabel: text,
+    emptyLabel: text,
   }),
   method: z.strictObject({
     index: text,
@@ -157,7 +169,7 @@ const researchPageSchema = z.strictObject({
   seo: seoSchema,
   hero: pageHeroSchema,
   listEyebrow: text,
-  listDescriptionLines: z.array(text).length(2),
+  emptyLabel: text,
   detail: z.strictObject({
     breadcrumbLabel: text,
     yearLabel: text,
@@ -167,6 +179,8 @@ const researchPageSchema = z.strictObject({
     nextAriaPrefix: text,
   }),
 });
+
+const projectsPageSchema = researchPageSchema.extend({ page: z.literal("projects") });
 
 const peoplePageSchema = z.strictObject({
   page: z.literal("people"),
@@ -181,12 +195,19 @@ const peoplePageSchema = z.strictObject({
   statusYearSuffix: text,
   statusCountSuffix: text,
   leadershipLabel: text,
-  teamLabel: text,
   membersLabel: text,
   emptyLabel: text,
   joinEyebrow: text,
   joinTitleLines: z.array(text).length(2),
   joinLinkLabel: text,
+  profile: z.strictObject({
+    historyLabel: text,
+    researchLabel: text,
+    projectsLabel: text,
+    emptyResearchLabel: text,
+    emptyProjectsLabel: text,
+    backLabel: text,
+  }),
   memberLinks: z.strictObject({
     github: text,
     website: text,
@@ -209,24 +230,36 @@ const pages = defineCollection({
     homePageSchema,
     aboutPageSchema,
     researchPageSchema,
+    projectsPageSchema,
     peoplePageSchema,
     notFoundPageSchema,
   ]),
 });
 
+const activitySchema = z.strictObject({
+  title: text,
+  titleEn: text,
+  summary: text,
+  code: text,
+  members: z.array(text).min(1, "참여자는 한 명 이상 필요합니다."),
+  year: text.regex(/^\d{4}$/, "연도는 네 자리 숫자여야 합니다."),
+  phase: z.enum(["Ongoing", "Exploration", "Archive"]),
+  tags: z.array(text).min(1),
+  visual: z.enum(["orbit", "grid", "wave"]),
+  featured: z.boolean().default(false),
+  order: z.number().int().nonnegative(),
+});
+
+const research = defineCollection({
+  loader: glob({ pattern: "**/*.md", base: "./src/content/research" }),
+  schema: activitySchema.extend({
+    code: text.regex(/^R—\d{2}$/, "연구 코드는 R—01 형식이어야 합니다."),
+  }),
+});
 const projects = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/projects" }),
-  schema: z.strictObject({
-    title: text,
-    titleEn: text,
-    summary: text,
-    code: text.regex(/^R—\d{2}$/, "연구 코드는 R—01 형식이어야 합니다."),
-    year: text.regex(/^\d{4}$/, "연도는 네 자리 숫자여야 합니다."),
-    phase: z.enum(["Ongoing", "Exploration", "Archive"]),
-    tags: z.array(text).min(1),
-    visual: z.enum(["orbit", "grid", "wave"]),
-    featured: z.boolean().default(false),
-    order: z.number().int().nonnegative(),
+  schema: activitySchema.extend({
+    code: text.regex(/^P—\d{2}$/, "프로젝트 코드는 P—01 형식이어야 합니다."),
   }),
 });
 
@@ -243,7 +276,7 @@ const members = defineCollection({
         z.strictObject({
           year: z.number().int().min(2000).max(2100),
           role: text,
-          group: z.enum(["faculty", "researcher", "student", "alumni"]),
+          group: z.enum(["Undergraduate", "Graduate Student"]),
           level: z.enum(["leadership", "member"]).default("member"),
         }),
       )
@@ -259,4 +292,4 @@ const members = defineCollection({
   }),
 });
 
-export const collections = { site, pages, projects, members };
+export const collections = { site, pages, research, projects, members };

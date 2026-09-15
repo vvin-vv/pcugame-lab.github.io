@@ -1,3 +1,5 @@
+import { parse } from "yaml";
+import { indexMembers, resolveParticipants } from "../src/lib/activity-members.mjs";
 import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -11,6 +13,7 @@ const requiredFiles = [
   "pages/home.md",
   "pages/about.md",
   "pages/research.md",
+  "pages/projects.md",
   "pages/people.md",
   "pages/404.md",
 ];
@@ -51,13 +54,8 @@ function splitMarkdown(source, file) {
 }
 
 function scalar(frontmatter, key) {
-  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(
-    `^${escapedKey}:\\s*(?:"([^"]*)"|'([^']*)'|([^#\\r\\n]+?))\\s*(?:#.*)?$`,
-    "m",
-  );
-  const match = frontmatter.match(pattern);
-  return match ? (match[1] ?? match[2] ?? match[3]).trim() : undefined;
+  const value = frontmatter?.[key];
+  return typeof value === "string" ? value.trim() : value;
 }
 
 function reportDuplicates(items, label) {
@@ -84,14 +82,24 @@ for (const requiredFile of requiredFiles) {
 }
 
 const markdownFiles = await walkMarkdown(contentRoot);
-const projectCodes = [];
-const projectOrders = [];
+const codes = { research: [], projects: [] };
+const orders = { research: [], projects: [] };
+const activities = [];
+const members = [];
 const memberNames = [];
 
 for (const file of markdownFiles) {
   const source = await readFile(file, "utf8");
   const relativePath = relativeContentPath(file);
-  const { frontmatter, body } = splitMarkdown(source, file);
+  const { frontmatter: raw, body } = splitMarkdown(source, file);
+  let frontmatter;
+  try {
+    frontmatter = parse(raw);
+    if (!frontmatter || typeof frontmatter !== "object" || Array.isArray(frontmatter)) throw new Error("YAML 객체가 필요합니다.");
+  } catch (error) {
+    errors.push(`${relativePath}: ${error.message}`);
+    continue;
+  }
 
   for (const { pattern, label } of forbiddenPatterns) {
     if (pattern.test(source)) {
@@ -113,14 +121,19 @@ for (const file of markdownFiles) {
     errors.push(`${relativePath}: 연구실 소개 본문이 비어 있습니다.`);
   }
 
-  if (relativePath.startsWith("projects/")) {
-    if (!body) errors.push(`${relativePath}: 프로젝트 본문이 비어 있습니다.`);
-    projectCodes.push({ value: scalar(frontmatter, "code"), file });
-    projectOrders.push({ value: scalar(frontmatter, "order"), file });
+  const kind = relativePath.split("/")[0];
+  if (kind === "research" || kind === "projects") {
+    if (!body) errors.push(`${relativePath}: 활동 본문이 비어 있습니다.`);
+    const code = scalar(frontmatter, "code");
+    if (!(kind === "research" ? /^R—\d{2}$/ : /^P—\d{2}$/).test(code ?? "")) errors.push(`${relativePath}: 잘못된 활동 코드 "${code}"입니다.`);
+    codes[kind].push({ value: code, file });
+    orders[kind].push({ value: scalar(frontmatter, "order"), file });
+    activities.push({ names: frontmatter.members, file: relativePath });
   }
 
   if (relativePath.startsWith("members/")) {
     memberNames.push({ value: scalar(frontmatter, "name"), file });
+    members.push({ id: relativePath, data: { name: scalar(frontmatter, "name") ?? "" } });
     const photo = scalar(frontmatter, "photo");
     if (photo?.startsWith("/")) {
       try {
@@ -132,8 +145,17 @@ for (const file of markdownFiles) {
   }
 }
 
-reportDuplicates(projectCodes, "프로젝트 코드");
-reportDuplicates(projectOrders, "프로젝트 표시 순서");
+for (const kind of ["research", "projects"]) {
+  reportDuplicates(codes[kind], `${kind} 코드`);
+  reportDuplicates(orders[kind], `${kind} 표시 순서`);
+}
+try {
+  const index = indexMembers(members);
+  for (const activity of activities) {
+    try { resolveParticipants(activity.names, index, activity.file); }
+    catch (error) { errors.push(error.message); }
+  }
+} catch (error) { errors.push(error.message); }
 reportDuplicates(memberNames, "구성원 이름");
 
 if (errors.length > 0) {

@@ -8,8 +8,8 @@ interests:
   - "Reverse Engineering"
 positions:
   - year: 2026
-    role: "Developer"
-    group: "researcher"
+    role: "Researcher"
+    group: "Undergraduate"
     level: "member"
 github: "https://github.com/BrainBluetooth"
 website: "https://store.steampowered.com/curator/44862084"

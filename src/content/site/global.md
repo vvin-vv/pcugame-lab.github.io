@@ -18,9 +18,12 @@ site:
     - href: "/research/"
       label: "Research"
       index: "02"
+    - href: "/projects/"
+      label: "Projects"
+      index: "03"
     - href: "/people/"
       label: "People"
-      index: "03"
+      index: "04"
 
 # 모든 페이지 상단의 공통 헤더
 header:
@@ -52,7 +55,12 @@ footer:
 accessibility:
   skipLinkLabel: "본문으로 이동"
   memberInterestsLabel: "관심 연구 분야"
-  projectKeywordsLabel: "연구 키워드"
+  # {count}는 카드에 표시되지 않은 나머지 태그 수로 교체됩니다.
+  memberInterestsMoreLabel: "외 {count}개"
+  projectKeywordsLabel: "프로젝트 키워드"
+  researchKeywordsLabel: "연구 키워드"
+  researchViewSuffix: "연구 보기"
+  participantsLabel: "참여자"
   projectViewSuffix: "프로젝트 보기"
   projectVisualSuffix: "추상 그래픽"
 
@@ -69,7 +77,7 @@ lab:
     - title: "Fun"
       label: "재미"
       description: "진짜 재미란 무엇인가?"
-    - title: "Engineer"
+    - title: "Engineering"
       label: "공학"
       description: "전자기기에서 실행하는 모든 것."
     - title: "Programming"

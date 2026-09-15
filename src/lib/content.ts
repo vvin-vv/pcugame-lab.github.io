@@ -1,4 +1,5 @@
 import { getCollection, getEntry, type CollectionEntry } from "astro:content";
+import { indexMembers, resolveParticipants, activitiesForMember } from "./activity-members.mjs";
 import { sortMembers } from "./member-sort";
 
 type OrderedEntry = { data: { order: number } };
@@ -41,14 +42,28 @@ export async function getPageContent<T extends PageId>(
   return content as PageEntryFor<T>;
 }
 
-export async function getProjects() {
-  const entries = await getCollection("projects");
-  return entries.sort(byOrder);
+export type ActivityKind = "research" | "projects";
+export type Activity = CollectionEntry<ActivityKind> & { participants: CollectionEntry<"members">[] };
+
+export async function getActivities(kind: ActivityKind): Promise<Activity[]> {
+  const [entries, members] = await Promise.all([getCollection(kind), getMembers()]);
+  const index = indexMembers(members);
+  return entries.sort(byOrder).map((entry) => ({
+    ...entry,
+    participants: resolveParticipants(entry.data.members, index, `${kind}/${entry.id}.md`),
+  }));
 }
 
-export async function getFeaturedProjects() {
-  const entries = await getProjects();
-  return entries.filter(({ data }) => data.featured);
+export const getResearch = () => getActivities("research");
+export const getProjects = () => getActivities("projects");
+
+export async function getFeaturedActivities(kind: ActivityKind) {
+  return (await getActivities(kind)).filter(({ data }) => data.featured);
+}
+
+export async function getMemberActivities(memberId: string) {
+  const [research, projects] = await Promise.all([getResearch(), getProjects()]);
+  return activitiesForMember([...research, ...projects], memberId);
 }
 
 export async function getMembers() {

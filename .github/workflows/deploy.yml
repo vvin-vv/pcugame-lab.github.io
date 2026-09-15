@@ -17,15 +17,37 @@ concurrency:
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
       - name: Install, build, and upload site
         uses: withastro/action@v6
+        env:
+          IMAGE_CHANGE_LIST: ${{ runner.temp }}/image-changes
         with:
-          build-cmd: npm run validate
+          build-cmd: npm run images:optimize && npm run validate
+
+      - name: Commit validated WebP conversion
+        env:
+          IMAGE_CHANGE_LIST: ${{ runner.temp }}/image-changes
+        run: |
+          if [ ! -s "$IMAGE_CHANGE_LIST" ]; then
+            exit 0
+          fi
+          git --literal-pathspecs add --pathspec-from-file="$IMAGE_CHANGE_LIST" --pathspec-file-nul
+          if ! git diff --cached --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m "chore: convert PNG images to WebP"
+            git push origin HEAD:main
+          fi
 
   deploy:
     needs: build
