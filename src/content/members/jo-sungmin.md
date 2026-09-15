@@ -2,6 +2,7 @@
 name: "조성민"
 nameEn: "Sungmin Jo"
 monogram: "JSM"
+photo: "/images/members/jo-sungmin.jpg"
 interests:
   - "Cybersickness"
   - "Game Design"
